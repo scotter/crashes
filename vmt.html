@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Daily Vehicle Miles Traveled - Allegheny County 2014</title>
+<!-- jruby -run -e httpd . -p 9090 -->
+
+  <script src="//code.jquery.com/jquery-1.12.1.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/queue-async/1.0.7/queue.min.js"></script>
+  <script src="//cdn.leafletjs.com/leaflet/v0.7.7/leaflet.js"></script>
+  <script src="./js/L.CanvasOverlay.js"></script>
+  <script src="./js/L.D3SvgOverlay.min.js"></script>
+
+  <link rel="stylesheet" href="//cdn.leafletjs.com/leaflet/v0.7.7/leaflet.css" />
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+
+
+<style>
+
+  body {
+    padding: 0;
+    margin: 0;
+  }
+
+  html, body, #map {
+    height: 100%;
+    width: 100%;
+  }
+
+  #blurb {
+    position: absolute;
+    width: 100%;
+    bottom: 0px;
+    left: 0px;
+    font-size: 16px;
+    background-color: white;
+    padding: 8px;
+    opacity: 0.6;
+  }
+
+  .traffic {
+    fill: none;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+
+</style>
+
+<body>
+
+
+  <div id="map"></div>
+
+  <div id="blurb">
+    Annual average daily traffic in 2014.
+  </div>
+
+
+
+  <script>
+
+    var map = new L.Map('map', {
+            center: [40.449690349293654, -79.96192932128906], 
+            zoom: 11
+          }),
+        tileLayer = new L.TileLayer('http://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png');
+
+    tileLayer.setOpacity(0.3);
+
+    map.addLayer(tileLayer);
+
+    map._initPathRoot();
+
+
+    queue()
+      .defer(d3.json, './data/traffic.json')
+      .await(function(error, traffic) { 
+        if (error) throw error;
+
+        var colors = ['#fee0d2','#fcbba1','#fc9272','#fb6a4a','#ef3b2c','#cb181d','#a50f15','#67000d'];
+
+        traffic.features.forEach(function(d){
+            d.properties.value = Math.sqrt(+d.properties.dly_vmt);
+          });
+
+        var max_value = d3.max(traffic.features.map(function(d){
+            return d.properties.value;
+          }));
+
+        var quantize = d3.scale.quantize()
+          .domain([0, max_value])
+          .range(d3.range(8).map(function(i) { return colors[i] }));
+
+        var width_scale = d3.scale.linear()
+          .domain([0, max_value])
+          .range([0.5, 5]);
+
+        // SVG layer for routes.
+        var svg = L.d3SvgOverlay(function(selection, projection){
+
+          var traffic_g = selection.selectAll('.traffic');
+          if(traffic_g.empty()){
+            traffic_g = selection.append('g')
+              .attr('class','routes')
+
+            var traffic_paths = traffic_g.selectAll('path')
+              .data(traffic.features);
+
+            traffic_paths.enter().append('path')
+              .attr('class', 'traffic')
+              .attr('d', d3.geo.path()
+                  .projection(function(l){
+                    var p = projection.latLngToLayerPoint({ lon: l[0], lat:  l[1] });
+                    return [p.x,p.y];
+                  })
+                )
+              .attr('stroke', function(d){
+
+                return quantize( +d.properties.value );
+              })
+              .attr('stroke-width', function(d){
+                return width_scale( +d.properties.value );
+              })
+          }
+
+        });
+
+        svg.addTo(map);
+ 
+      });
+
+  </script>

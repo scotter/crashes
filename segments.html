@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Annual Average Daily Traffic - Allegheny County 2010-2014</title>
+<!-- jruby -run -e httpd . -p 9090 -->
+
+  <script src="//code.jquery.com/jquery-1.12.1.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/queue-async/1.0.7/queue.min.js"></script>
+  <script src="//cdn.leafletjs.com/leaflet/v0.7.7/leaflet.js"></script>
+  <script src="./js/L.CanvasOverlay.js"></script>
+  <script src="./js/L.D3SvgOverlay.min.js"></script>
+
+  <link rel="stylesheet" href="//cdn.leafletjs.com/leaflet/v0.7.7/leaflet.css" />
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+
+
+<style>
+
+  body {
+    padding: 0;
+    margin: 0;
+  }
+
+  html, body, #map {
+    height: 100%;
+    width: 100%;
+  }
+
+  #blurb {
+    position: absolute;
+    width: 100%;
+    bottom: 0px;
+    left: 0px;
+    font-size: 16px;
+    background-color: white;
+    padding: 8px;
+    opacity: 0.6;
+  }
+
+  .road {
+    fill: none;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+
+</style>
+
+<body>
+
+
+  <div id="map"></div>
+
+  <div id="blurb">
+    Annual average daily traffic in 2014.
+  </div>
+
+
+
+  <script>
+
+    var map = new L.Map('map', {
+            center: [40.449690349293654, -79.96192932128906], 
+            zoom: 11
+          }),
+        tileLayer = new L.TileLayer('http://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png');
+
+    tileLayer.setOpacity(1);
+
+    map.addLayer(tileLayer);
+
+    map._initPathRoot();
+
+
+    queue()
+      .defer(d3.json, './data/road_crash_stats.json')
+      .defer(d3.csv, './data/crashes.csv')
+      .await(function(error, roads, crashes) { 
+        if (error) throw error;
+        console.log(roads);
+        console.log(crashes);
+
+        var colors = ['#fee0d2','#fcbba1','#fc9272','#fb6a4a','#ef3b2c','#cb181d','#a50f15','#67000d'];
+
+        roads.features.forEach(function(d){
+          d.properties.value = Math.log(+d.properties.fatal_count_vmt_avg + +d.properties.maj_inj_count_vmt_avg);
+        });
+
+
+        var max_value = d3.max(roads.features.map(function(d){
+            return d.properties.value;
+          }));
+
+        var quantize = d3.scale.quantize()
+          .domain([0, max_value])
+          .range(d3.range(8).map(function(i) { return colors[i] }));
+
+        var width_scale = d3.scale.linear()
+          .domain([0, max_value])
+          .range([0.5, 5]);
+
+        // SVG layer for routes.
+        var svg = L.d3SvgOverlay(function(selection, projection){
+
+          var crashes_g = selection.selectAll('.crash');
+          if(crashes_g.empty()){
+            crashes_g = selection.append('g')
+              .attr('class','crashes')
+
+          crashes = crashes.filter(function(d){
+            return (+d.fatal_count + +d.maj_inj_count) > 0;
+          });
+
+          var circles = crashes_g.selectAll('circle')
+              .data(crashes);
+
+          circles.enter().append('circle')
+            .attr('class', function(d){
+              return 'crash c-' + d.road_crash_stats_id
+            })
+            .attr('r', function(d){
+              return +d.fatal_count + 5;
+            })
+            .attr('cx', function(d){
+              var p = projection.latLngToLayerPoint({ lon: +d.dec_long, lat: +d.dec_lat });
+              return p.x;
+            })
+            .attr('cy', function(d){
+              var p = projection.latLngToLayerPoint({ lon: +d.dec_long, lat: +d.dec_lat });
+              return p.y;
+            })         
+            .style('fill', function(){
+              return 'red';
+            })
+            .style('opacity', 0);
+          }
+
+
+          var roads_g = selection.selectAll('.road');
+          if(roads_g.empty()){
+            roads_g = selection.append('g')
+              .attr('class','roads')
+
+            var road_paths = roads_g.selectAll('path')
+              .data(roads.features);
+
+            road_paths.enter().append('path')
+              .attr('class', 'road')
+              .attr('d', d3.geo.path()
+                  .projection(function(l){
+                    var p = projection.latLngToLayerPoint({ lon: l[0], lat:  l[1] });
+                    return [p.x,p.y];
+                  })
+                )
+              .attr('stroke', function(d){
+                return quantize( +d.properties.value );
+              })
+              .attr('stroke-width', function(d){
+                return width_scale( +d.properties.value );
+              })
+              .on('mouseenter', function(d){
+                var self = this,
+                    other_roads = d3.selectAll('path.road').filter(function(d,i) {
+                      return (this !== self);
+                    });
+                d3.select(this).attr('opacity', 0.5);
+                other_roads.attr('opacity', 0.1);
+
+                crashes_g.selectAll('circle.c-' + d.properties.id)
+                  .style('opacity', 1)
+
+              })
+              .on('mouseleave', function(){
+                d3.selectAll('path.road').attr('opacity', 1);
+                crashes_g.selectAll('circle')
+                  .style('opacity', 0)
+              });
+          }
+
+         
+
+
+
+        });
+
+        svg.addTo(map);
+ 
+      });
+
+  </script>
