@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <title>Annual Average Daily Traffic - Allegheny County 2010-2014</title>
-<!-- jruby -run -e httpd . -p 9090 -->
 
   <script src="//code.jquery.com/jquery-1.12.1.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/queue-async/1.0.7/queue.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/leaflet.js"></script>
-  <script src="./js/L.CanvasOverlay.js"></script>
   <script src="./js/L.D3SvgOverlay.min.js"></script>
 
   <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/leaflet.css" />
@@ -48,11 +46,10 @@
 
 <body>
 
-
   <div id="map"></div>
 
   <div id="blurb">
-    Annual average daily traffic in 2014.
+    Road segments colored by their Fatal and Major Injury <a href="http://safety.fhwa.dot.gov/local_rural/training/fhwasa1109/app_c.cfm" target="_blank">rate per Vehicle Miles Traveled</a>. Hovering on segment shows the associated crashes in from 2010 - 2014. This is very much a work in progress.
   </div>
 
 
@@ -99,7 +96,7 @@
           .domain([0, max_value])
           .range([0.5, 5]);
 
-        // SVG layer for routes.
+
         var svg = L.d3SvgOverlay(function(selection, projection){
 
           var crashes_g = selection.selectAll('.crash');
@@ -176,10 +173,6 @@
                   .style('opacity', 0)
               });
           }
-
-         
-
-
 
         });
 

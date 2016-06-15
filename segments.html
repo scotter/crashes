@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <title>Crashes</title>
-<!-- jruby -run -e httpd . -p 9090 -->
 
   <script src="//code.jquery.com/jquery-1.12.1.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/queue-async/1.0.7/queue.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/leaflet.js"></script>
-  <script src="./js/L.CanvasOverlay.js"></script>
   <script src="./js/L.D3SvgOverlay.min.js"></script>
   <script src="./js/easing.js"></script>
 
@@ -23,22 +21,28 @@
     margin: 0;
   }
 
-  html, body {
+  html, body, #map {
     height: 100%;
     width: 100%;
   }
 
-  #map-danger {
-    height: 50%;
-    width: 100%;
-    border-bottom: 1px solid #ccc;
-  }
-
+  
   .traffic {
     fill: none;
     stroke-linejoin: round;
     stroke-linecap: round;
     stroke-opacity: 0.8;
+  }
+
+  #blurb {
+    position: absolute;
+    width: 100%;
+    bottom: 0px;
+    left: 0px;
+    font-size: 16px;
+    background-color: white;
+    padding: 8px;
+    opacity: 0.6;
   }
 
 
@@ -47,22 +51,24 @@
 <body>
 
 
-  <div id="map-danger"></div>
+  <div id="map"></div>
+
+  <div id="blurb">
+    Road segments colored by their Fatal and Major Injury <a href="http://safety.fhwa.dot.gov/local_rural/training/fhwasa1109/app_c.cfm" target="_blank">rate per Vehicle Miles Traveled</a>.
+  </div>
 
 
   <script>
 
-    var map_danger = new L.Map('map-danger', {
+    var map = new L.Map('map', {
             center: [40.449690349293654, -79.96192932128906], 
             zoom: 10
           }),
         tileLayer = new L.TileLayer('http://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png');
 
-    // tileLayer.setOpacity(0.25);
+    map.addLayer(tileLayer);
 
-    map_danger.addLayer(tileLayer);
-
-    map_danger._initPathRoot();
+    map._initPathRoot();
 
 
     var Circle = function(spec){
@@ -82,12 +88,6 @@
       var f =  this.fills[8 - (+this.max_severity_level)];
       return 'rgba(' + f + ',' + this.opacity + ')';
     };
-
-
-    // queue()
-      // .defer(d3.csv, './data/injuries_2014.csv')
-      // .await(function(error, data) { 
-        // if (error) throw error;
 
         d3.json('./data/traffic_crashes.json', function(traffic){
 
@@ -115,7 +115,6 @@
           .domain([0, max_value])
           .range([0.5, 4]);
 
-        // SVG layer for routes.
         var svg = L.d3SvgOverlay(function(selection, projection){
 
           var traffic_g = selection.selectAll('.traffic');
@@ -148,45 +147,8 @@
 
         });
 
-        svg.addTo(map_danger);
+        svg.addTo(map);
 
-       // Canvas Drawing
-      // window.draw = function(){
-      //   var context = params.canvas.getContext('2d');
-
-      //   context.clearRect(0, 0, params.canvas.width, params.canvas.height);
-
-      //   // Draw the current circles
-      //   data.forEach(function(d){
-      //     var c = Circle(d);
-      //     point = canvasOverlay._map.latLngToContainerPoint(c.geom);
-
-      //     context.fillStyle = c.get_fill();
-
-      //     context.beginPath();
-      //     context.arc(point.x, point.y, c.radius, 0, Math.PI * 2);
-      //     context.fill();
-      //     context.closePath();
-
-      //   });
-
-      // };
-
-
-      // var drawingOnCanvas = function(canvasOverlay, params) {
-      //   window.canvasOverlay = canvasOverlay;
-      //   window.params = params;
-      //   draw();
-      // };
-
-
-      // setTimeout(function(){
-      //   L.canvasOverlay()
-      //     .drawing(drawingOnCanvas)
-      //     .addTo(map);
-      // }, 2000);
-      
     }); 
-  // }); 
 
   </script>

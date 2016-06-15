@@ -14,7 +14,7 @@ This map shows 2014 crashes with injuries. The size of each circle is related to
 [https://scotter.github.io/crashes/animation.html](https://scotter.github.io/crashes/animation.html)
 This map animates 2014 crashes with injuries by time of day. Again, the size of each circle is related to the number of injuries and the color is related to the max severity level.
 
-#Average Annual Daily Traffice
+#Average Annual Daily Traffic
 [https://scotter.github.io/crashes/aadt.html](https://scotter.github.io/crashes/aadt.html)
 This map shows the Average Annual Daily Traffic for road segments present in the PA State Roads data. Note that this only includes state roads. Unfortunately, we lack data on traffic volumes for local roads.
 

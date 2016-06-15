@@ -1,5 +1,7 @@
 ##Data Wrangling
 
+Below, we wrangle the road and crash data into a PostGIS database so we can count crashes near road segments and map them.
+
 Historical road data is available from http://www.pasda.psu.edu/data/padot/state/historic/PaStateRoads/. After comparing this to the traffic data, they seem to have very similar coverage on traffic and roads. 
 
 After downloading the file, create a new Postgres Database with the template_gis template. 
