@@ -1,6 +1,6 @@
 #Allengheny County Crashes
 
-This project attempts to visualize and analyze Allegheny County crashes from 2010 - 2014. The crash data provided by the county includes crash points. But if we want to know about how "dangerous" a road is, we also need to know the level of usage of the roads on which crashes occur. Roads with more usage cars are more likely to have crashes simply because there is a larger volume of traffic.
+This project attempts to visualize and analyze Allegheny County crashes from 2010 - 2014. The crash data provided by the county includes crash points. But if we want to know about how "dangerous" a road is, we also need to know the level of usage of the roads on which crashes occur. Roads with higher levels of usage are more likely to have crashes simply because there is more traffic.
 
 Luckily, PennDOT provides the PA State Roads data, which includes road segment shapefiles and Average Average Daily Traffic Counts. By merging this data with crashes that are relatively close to each road, we can get a measure of how dangerous a road is. Then we can map then and start to ask questions about why more crashes occur there. From there further analyses can be conduct at the road segment level to investigate the effects of road geometry and crash conditions on the expected number of crashes using statistical methods like multiple regression. 
 
