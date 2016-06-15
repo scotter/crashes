@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Crashes</title>
+<!-- jruby -run -e httpd . -p 9090 -->
+
+  <script src="//code.jquery.com/jquery-1.12.1.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/queue-async/1.0.7/queue.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/leaflet.js"></script>
+  <script src="./js/L.CanvasOverlay.js"></script>
+  <script src="./js/L.D3SvgOverlay.min.js"></script>
+  <script src="./js/easing.js"></script>
+
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/leaflet.css" />
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+
+
+<style>
+
+  body {
+    padding: 0;
+    margin: 0;
+  }
+
+  html, body {
+    height: 100%;
+    width: 100%;
+  }
+
+  #map-danger {
+    height: 50%;
+    width: 100%;
+    border-bottom: 1px solid #ccc;
+  }
+
+  .traffic {
+    fill: none;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    stroke-opacity: 0.8;
+  }
+
+
+</style>
+
+<body>
+
+
+  <div id="map-danger"></div>
+
+
+  <script>
+
+    var map_danger = new L.Map('map-danger', {
+            center: [40.449690349293654, -79.96192932128906], 
+            zoom: 10
+          }),
+        tileLayer = new L.TileLayer('http://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png');
+
+    // tileLayer.setOpacity(0.25);
+
+    map_danger.addLayer(tileLayer);
+
+    map_danger._initPathRoot();
+
+
+    var Circle = function(spec){
+      this.duration = 10 * window.frames_per_m;
+      this.frame = 0;
+      this.radius = (window.params.zoom - 9 + 1) * (+spec.maj_inj_count + 1);
+      this.geom = [+spec.dec_lat, +spec.dec_long];
+    };
+
+    Circle.prototype.opacity = 0.1;
+    Circle.prototype.radius_easing = 'easeOutQuint';
+    Circle.prototype.opacity_easing = 'easeInQuart';
+    Circle.prototype.fills = ['255,237,160','254,217,118','254,178,76','253,141,60','252,78,42','227,26,28','177,0,38','128,0,38'];
+    Circle.prototype.fade_after = 0.2;
+
+    Circle.prototype.get_fill = function(){
+      var f =  this.fills[8 - (+this.max_severity_level)];
+      return 'rgba(' + f + ',' + this.opacity + ')';
+    };
+
+
+    // queue()
+      // .defer(d3.csv, './data/injuries_2014.csv')
+      // .await(function(error, data) { 
+        // if (error) throw error;
+
+        d3.json('./data/traffic_crashes.json', function(traffic){
+
+        traffic.features.forEach(function(d){
+          var p = d.properties,
+              vmt = +p.dly_vmt,
+              r = vmt > 0 ? (+p.fatal_count + +p.maj_inj_count + +p.mod_inj_count) / vmt : 0;
+              // r = (+p.speeding_related) / +p.seg_lngth_;
+              // r = vmt > 0 ? (+p.bicycle_death_count + +p.bicycle_maj_inj_count + +p.ped_death_count + +p.ped_maj_inj_count) / vmt : 0;
+              d.properties.value = Math.sqrt(r);
+        });
+
+        var colors = ['rgb(255,237,160)','rgb(254,217,118)','rgb(254,178,76)','rgb(253,141,60)','rgb(252,78,42)','rgb(227,26,28)','rgb(177,0,38','rgb(128,0,38)'];
+
+        var max_value = d3.max(traffic.features.map(function(d){
+            return d.properties.value;
+          }));
+
+
+        var quantize = d3.scale.quantize()
+          .domain([0, max_value])
+          .range(d3.range(8).map(function(i) { return colors[i] }));
+
+        var width_scale = d3.scale.linear()
+          .domain([0, max_value])
+          .range([0.5, 4]);
+
+        // SVG layer for routes.
+        var svg = L.d3SvgOverlay(function(selection, projection){
+
+          var traffic_g = selection.selectAll('.traffic');
+          if(traffic_g.empty()){
+            traffic_g = selection.append('g')
+              .attr('class','routes')
+
+            var traffic_paths = traffic_g.selectAll('path')
+              .data(traffic.features);
+
+            traffic_paths.enter().append('path')
+              .attr('class', 'traffic')
+              .attr('d', d3.geo.path()
+                  .projection(function(l){
+                    var p = projection.latLngToLayerPoint({ lon: l[0], lat:  l[1] });
+                    return [p.x,p.y];
+                  })
+                )
+              .attr('stroke', function(d){
+                return quantize( d.properties.value );
+              })
+              .attr('stroke-width', function(d){
+                return width_scale( d.properties.value );
+              })
+              // .attr('stroke-width', 2)
+              .attr('id', function(d){
+                return 'gid-' + d.properties.gid;
+              })
+          }
+
+        });
+
+        svg.addTo(map_danger);
+
+       // Canvas Drawing
+      // window.draw = function(){
+      //   var context = params.canvas.getContext('2d');
+
+      //   context.clearRect(0, 0, params.canvas.width, params.canvas.height);
+
+      //   // Draw the current circles
+      //   data.forEach(function(d){
+      //     var c = Circle(d);
+      //     point = canvasOverlay._map.latLngToContainerPoint(c.geom);
+
+      //     context.fillStyle = c.get_fill();
+
+      //     context.beginPath();
+      //     context.arc(point.x, point.y, c.radius, 0, Math.PI * 2);
+      //     context.fill();
+      //     context.closePath();
+
+      //   });
+
+      // };
+
+
+      // var drawingOnCanvas = function(canvasOverlay, params) {
+      //   window.canvasOverlay = canvasOverlay;
+      //   window.params = params;
+      //   draw();
+      // };
+
+
+      // setTimeout(function(){
+      //   L.canvasOverlay()
+      //     .drawing(drawingOnCanvas)
+      //     .addTo(map);
+      // }, 2000);
+      
+    }); 
+  // }); 
+
+  </script>
