@@ -63,15 +63,10 @@ CREATE INDEX roads_geom_idx
   USING gist
   (geom);
 
---DROP TABLE roads_2014;
---DROP TABLE roads_2013;
---DROP TABLE roads_2012;
---DROP TABLE roads_2011;
---DROP TABLE roads_2010;
 ```
 
 
-We have AADT for several years. Let's average them together. There's one complication. The road segments aren't exactly the same. So first, we'll average the traffic volumes by State Route Number, Segment Number, and Side Indicator. Then we'll merge in the latest geomtry from the roads table.
+We have AADT for several years. Let's average them together. There's one complication. The road segments aren't exactly the same. So first, we'll average the traffic volumes by State Route Number, Segment Number, and Side Indicator. Then we'll merge in the most recent years of geometry from the roads table.
 
 ```sql
 DROP TABLE IF EXISTS road_stats;
@@ -452,6 +447,44 @@ UPDATE crashes
 WHERE crashes.crash_crn = d.crash_crn;
 ```
 
+
+Export the crashes above to a csv, now that they're associated with a segment.
+
+```sql
+COPY (
+    SELECT 
+        road_stats_id,
+        road_stats_id_distance,
+        year,
+        dec_lat, 
+        dec_long,
+        fatal_count,
+        maj_inj_count,
+        bicycle_death_count,
+        bicycle_maj_inj_count,
+        ped_death_count,
+        ped_maj_inj_count,
+        time_of_day,
+        weather,
+        relation_to_road,
+        alcohol_related,
+        speeding,
+        speeding_related,
+        aggressive_driving
+
+    FROM crashes 
+    WHERE 
+        road_crash_stats_id IS NOT NULL AND
+        fatal_count > 0 OR
+        maj_inj_count > 0 OR
+        bicycle_death_count > 0 OR
+        bicycle_maj_inj_count > 0 OR
+        ped_death_count > 0 OR
+        ped_maj_inj_count > 0
+) TO '/Users/Shared/crashes.csv'  DELIMITER ',' CSV HEADER;
+```
+
+
 Now, let's aggregate data of interest and append it to the road_stats table.
 
 SQL
@@ -588,12 +621,25 @@ UPDATE road_stats SET dly_vmt_avg = (seg_lngth_ / 5280) * cur_aadt_avg;
 ```
 
 
+```bash
+ogr2ogr -f GeoJSON road_stats.json "PG:host=localhost dbname=crashes user=crashes password=crashes" -sql 'SELECT id, st_rt_no, seg_no, cur_aadt_avg, street_nam, lane_cnt, seg_lngth_, geom, dly_vmt_avg, fatal_count, maj_inj_count, bicycle_death_count, bicycle_maj_inj_count, ped_death_count, ped_maj_inj_count FROM road_stats;'
+```
+
+
+
+Refactoring the junk below...
+
+
+
+
+
+
 ```sql
 ALTER TABLE road_stats
-    AVG( (fatal_count * 1000000000) / (dly_vmt  * 365 ) ) as fatal_count_vmt_avg,
-        AVG( (maj_inj_count * 1000000000) / (dly_vmt  * 365 ) ) as maj_inj_count_vmt_avg,
+    AVG( (fatal_count * 100 000 000) / (dly_vmt  * 365 ) ) as fatal_count_vmt_avg,
+        AVG( (maj_inj_count * 1000000000) / (dly_vmt  * 365 ) ) as maj_inj_count_vmt_rate,
     
-        AVG( (bicycle_death_count * 1000000000) / (dly_vmt  * 365 ) ) as bicycle_death_count_vmt_avg,
+        AVG( (bicycle_death_count * 1000000000) / (dly_vmt  * 365 ) ) as bicycle_death_count_vmt_rate,
         AVG( (bicycle_maj_inj_count * 1000000000) / (dly_vmt  * 365 ) ) bicycle_maj_inj_count_vmt_avg,
 
         AVG( (ped_death_count * 1000000000) / (dly_vmt  * 365 ) ) as ped_death_count_vmt_avg,
@@ -655,35 +701,4 @@ UPDATE crashes
 WHERE crashes.crash_crn = d.crash_crn;
 ```
 
-
-
-
-
-
-
-
-```sql
-COPY (
-    SELECT 
-        road_crash_stats_id,
-        year,
-        dec_lat, 
-        dec_long
-        fatal_count,
-        maj_inj_count,
-        bicycle_death_count,
-        bicycle_maj_inj_count,
-        ped_death_count,
-        ped_maj_inj_count
-    FROM crashes 
-    WHERE 
-        road_crash_stats_id IS NOT NULL AND
-        fatal_count > 0 OR
-        maj_inj_count > 0 OR
-        bicycle_death_count > 0 OR
-        bicycle_maj_inj_count > 0 OR
-        ped_death_count > 0 OR
-        ped_maj_inj_count > 0
-) TO '/Users/Shared/crashes.csv'  DELIMITER ',' CSV HEADER;
-```
 
