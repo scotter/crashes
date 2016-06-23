@@ -1,10 +1,8 @@
 ##Data Wrangling
 
-Below, we wrangle the road and crash data into a PostGIS database so we can count crashes near road segments and map them.
+Below, we wrangle the road and crash data into a PostGIS database so we can count crashes near road segments and map them. Start by creating a new Postgres Database with the template_gis template. 
 
-Historical road data is available from http://www.pasda.psu.edu/data/padot/state/historic/PaStateRoads/. After comparing this to the traffic data, they seem to have very similar coverage on traffic and roads. 
-
-After downloading the file, create a new Postgres Database with the template_gis template. 
+Historical road data is available from http://www.pasda.psu.edu/data/padot/state/historic/PaStateRoads/. After comparing this to the traffic data, they seem to have very similar coverage on roads. 
 
 To figure out the projection, paste the contents of the .prj into http://prj2epsg.org/search. Looks like it's 4269, NAD83_GEO. Then, import the data into the traffic table of your PostGIS database. 
 
@@ -29,9 +27,24 @@ DELETE FROM roads_2013 WHERE cty_code != '02';
 DELETE FROM roads_2012 WHERE cty_code != '02';
 DELETE FROM roads_2011 WHERE cty_code != '02';
 DELETE FROM roads_2010 WHERE cty_code != '02';
+
+ALTER TABLE roads_2014 ADD COLUMN year integer;
+UPDATE roads_2014 SET year = 2014;
+
+ALTER TABLE roads_2013 ADD COLUMN year integer;
+UPDATE roads_2013 SET year = 2013;
+
+ALTER TABLE roads_2012 ADD COLUMN year integer;
+UPDATE roads_2012 SET year = 2012;
+
+ALTER TABLE roads_2011 ADD COLUMN year integer;
+UPDATE roads_2011 SET year = 2011;
+
+ALTER TABLE roads_2010 ADD COLUMN year integer;
+UPDATE roads_2010 SET year = 2010;
 ```
 
-Create a new table for all the traffic data. 
+Create a new table for all the road data. 
 
 ```sql
 DROP TABLE IF EXISTS roads;
@@ -39,60 +52,102 @@ CREATE TABLE roads AS SELECT * FROM roads_2014 WHERE 1=2;
 ALTER TABLE roads ADD COLUMN year integer;
 ALTER TABLE roads OWNER TO crashes;
 
-INSERT INTO roads 
-    (year, gid, st_rt_no, cty_code, juris, district_n, seg_no, seg_lngth_, yr_built, yr_resurf, fac_type, total_widt, surf_type, lane_cnt, divsr_type, divsr_widt, cur_aadt, access_ctr, toll_code, street_nam, traf_rt_no, traf_rt_n1, traf_rt_n2, nhs_ind, side_ind, nlf_id, nlf_cntl_b, nlf_cntl_e, pa_byway_i, geom)
-SELECT 
-    2014, gid, st_rt_no, cty_code, juris, district_n, seg_no, seg_lngth_, yr_built, yr_resurf, fac_type, total_widt, surf_type, lane_cnt, divsr_type, divsr_widt, cur_aadt, access_ctr, toll_code, street_nam, traf_rt_no, traf_rt_n1, traf_rt_n2, nhs_ind, side_ind, nlf_id, nlf_cntl_b, nlf_cntl_e, pa_byway_i, geom
-FROM 
-    roads_2014;
-
-INSERT INTO roads
-    (year, gid, st_rt_no, cty_code, juris, district_n, seg_no, seg_lngth_, yr_built, yr_resurf, fac_type, total_widt, surf_type, lane_cnt, divsr_type, divsr_widt, cur_aadt, access_ctr, toll_code, street_nam, traf_rt_no, traf_rt_n1, traf_rt_n2, nhs_ind, side_ind, nlf_id, nlf_cntl_b, nlf_cntl_e, pa_byway_i, geom)
-SELECT 
-    2013, gid, st_rt_no, cty_code, juris, district_n, seg_no, seg_lngth_, yr_built, yr_resurf, fac_type, total_widt, surf_type, lane_cnt, divsr_type, divsr_widt, cur_aadt, access_ctr, toll_code, street_nam, traf_rt_no, traf_rt_n1, traf_rt_n2, nhs_ind, side_ind, nlf_id, nlf_cntl_b, nlf_cntl_e, pa_byway_i, geom
-FROM 
-    roads_2013;
-
-INSERT INTO roads
-    (year, gid, st_rt_no, cty_code, juris, district_n, seg_no, seg_lngth_, yr_built, yr_resurf, fac_type, total_widt, surf_type, lane_cnt, divsr_type, divsr_widt, cur_aadt, access_ctr, toll_code, street_nam, traf_rt_no, traf_rt_n1, traf_rt_n2, nhs_ind, side_ind, nlf_id, nlf_cntl_b, nlf_cntl_e, pa_byway_i, geom)
-SELECT 
-    2012, gid, st_rt_no, cty_code, juris, district_n, seg_no, seg_lngth_, yr_built, yr_resurf, fac_type, total_widt, surf_type, lane_cnt, divsr_type, divsr_widt, cur_aadt, access_ctr, toll_code, street_nam, traf_rt_no, traf_rt_n1, traf_rt_n2, nhs_ind, side_ind, nlf_id, nlf_cntl_b, nlf_cntl_e, pa_byway_i, geom
-FROM 
-    roads_2012;
-
-INSERT INTO roads
-    (year, gid, st_rt_no, cty_code, juris, district_n, seg_no, seg_lngth_, yr_built, yr_resurf, fac_type, total_widt, surf_type, lane_cnt, divsr_type, divsr_widt, cur_aadt, access_ctr, toll_code, street_nam, traf_rt_no, traf_rt_n1, traf_rt_n2, nhs_ind, side_ind, nlf_id, nlf_cntl_b, nlf_cntl_e, pa_byway_i, geom)
-SELECT 
-    2011, gid, st_rt_no, cty_code, juris, district_n, seg_no, seg_lngth_, yr_built, yr_resurf, fac_type, total_widt, surf_type, lane_cnt, divsr_type, divsr_widt, cur_aadt, access_ctr, toll_code, street_nam, traf_rt_no, traf_rt_n1, traf_rt_n2, nhs_ind, side_ind, nlf_id, nlf_cntl_b, nlf_cntl_e, pa_byway_i, geom
-FROM 
-    roads_2011;
-
-INSERT INTO roads
-    (year, gid, st_rt_no, cty_code, juris, district_n, seg_no, seg_lngth_, yr_built, yr_resurf, fac_type, total_widt, surf_type, lane_cnt, divsr_type, divsr_widt, cur_aadt, access_ctr, toll_code, street_nam, traf_rt_no, traf_rt_n1, traf_rt_n2, nhs_ind, side_ind, nlf_id, nlf_cntl_b, nlf_cntl_e, pa_byway_i, geom)
-SELECT 
-    2010, gid, st_rt_no, cty_code, juris, district_n, seg_no, seg_lngth_, yr_built, yr_resurf, fac_type, total_widt, surf_type, lane_cnt, divsr_type, divsr_widt, cur_aadt, access_ctr, toll_code, street_nam, traf_rt_no, traf_rt_n1, traf_rt_n2, nhs_ind, side_ind, nlf_id, nlf_cntl_b, nlf_cntl_e, pa_byway_i, geom
-FROM 
-    roads_2010;
+INSERT INTO roads select * from roads_2014; 
+INSERT INTO roads select * from roads_2013; 
+INSERT INTO roads select * from roads_2012; 
+INSERT INTO roads select * from roads_2011; 
+INSERT INTO roads select * from roads_2010; 
 
 CREATE INDEX roads_geom_idx
   ON roads
   USING gist
   (geom);
 
-ALTER TABLE roads ADD COLUMN geom_feet geometry(MULTILINESTRING,2272);
-UPDATE roads SET geom_feet = ST_Transform(geom, 2272);
+```
 
-DROP INDEX IF EXISTS roads_geom_feet_idx;
+
+We have AADT for several years. Let's average them together. There's one complication. The road segments aren't exactly the same. So first, we'll average the traffic volumes by State Route Number, Segment Number, and Side Indicator. Then we'll merge in the most recent years of geometry from the roads table.
+
+```sql
+DROP TABLE IF EXISTS road_stats;
+
+CREATE TABLE road_stats 
+AS (SELECT
+        st_rt_no, 
+        seg_no,
+        side_ind,
+        AVG(cur_aadt) as cur_aadt_avg
+FROM
+        roads
+WHERE 
+        cur_aadt > 0
+GROUP BY
+        st_rt_no, 
+        seg_no,
+        side_ind
+);
+```
+
+Let's add the latest geometry and other road characteristics.
+
+```sql
+ALTER TABLE road_stats ADD COLUMN street_nam varchar(25);
+ALTER TABLE road_stats ADD COLUMN lane_cnt numeric;
+ALTER TABLE road_stats ADD COLUMN total_widt numeric;
+ALTER TABLE road_stats ADD COLUMN seg_lngth_ numeric;
+ALTER TABLE road_stats ADD COLUMN geom geometry(MULTILINESTRING, 4269);
+
+UPDATE road_stats s
+    SET
+        street_nam = u.street_nam,
+        lane_cnt = u.lane_cnt, 
+        total_widt = u.total_widt,
+        seg_lngth_ = u.seg_lngth_,
+        geom = u.geom
+FROM
+(
+    SELECT
+        r.geom, r.gid, r.st_rt_no, r.seg_no, r.side_ind, r.street_nam, r.lane_cnt, r.total_widt, r.seg_lngth_
+    FROM 
+    (
+    SELECT
+            MAX(year) as year,
+            st_rt_no, 
+            seg_no,
+            side_ind
+        FROM
+            roads
+        GROUP BY
+            st_rt_no, 
+            seg_no,
+            side_ind
+    ) as m,
+     roads r
+     WHERE 
+        m.year = r.year AND
+        m.st_rt_no = r.st_rt_no AND
+        m.seg_no = r.seg_no AND
+        m.side_ind = r.side_ind
+) as u
+WHERE
+    s.st_rt_no = u.st_rt_no AND 
+    s.seg_no = u.seg_no AND
+    s.side_ind = u.side_ind;
+```
+
+Let's add an id (primary key) to the road_stats table that we can reference from other tables. Let's also transform the geometries to so we can specify the distance to them in feet.
+
+```sql
+ALTER TABLE road_stats ADD COLUMN id SERIAL PRIMARY KEY;
+
+ALTER TABLE road_stats ADD COLUMN geom_feet geometry(MULTILINESTRING,2272);
+UPDATE road_stats SET geom_feet = ST_Transform(geom, 2272);
+
+DROP INDEX IF EXISTS road_stats_geom_feet_idx;
 CREATE INDEX roads_geom_feet_idx
-  ON roads
+  ON road_stats
   USING gist
   (geom_feet);
-
---DROP TABLE traffic_2014;
---DROP TABLE traffic_2013;
---DROP TABLE traffic_2012;
---DROP TABLE traffic_2011;
---DROP TABLE traffic_2010;
 ```
 
 Create a crashes table in our database.
@@ -307,7 +362,20 @@ COPY crashes_2012 FROM '/Users/Shared/2012alcocrash.csv' WITH DELIMITER ',' NULL
 COPY crashes_2011 FROM '/Users/Shared/2011alcocrash.csv' WITH DELIMITER ',' NULL '' CSV HEADER;
 COPY crashes_2010 FROM '/Users/Shared/2010alcocrash.csv' WITH DELIMITER ',' NULL '' CSV HEADER;
 
+ALTER TABLE crashes_2014 ADD COLUMN year integer;
+UPDATE crashes_2014 SET year = 2014;
 
+ALTER TABLE crashes_2013 ADD COLUMN year integer;
+UPDATE crashes_2013 SET year = 2013;
+
+ALTER TABLE crashes_2012 ADD COLUMN year integer;
+UPDATE crashes_2012 SET year = 2012;
+
+ALTER TABLE crashes_2011 ADD COLUMN year integer;
+UPDATE crashes_2011 SET year = 2011;
+
+ALTER TABLE crashes_2010 ADD COLUMN year integer;
+UPDATE crashes_2010 SET year = 2010;
 ```
 
 Let's put together all the crash data into the same table
@@ -315,44 +383,13 @@ Let's put together all the crash data into the same table
 ```sql
 DROP TABLE IF EXISTS crashes;
 CREATE TABLE crashes AS SELECT * FROM crashes_2014 WHERE 1=2;
-ALTER TABLE crashes ADD COLUMN year integer;
 ALTER TABLE crashes OWNER TO crashes;
 
-INSERT INTO crashes
-    (year, crash_crn, district, crash_county, municipality, police_agcy, crash_year, crash_month, day_of_week, time_of_day, hour_of_day, illumination, weather, road_condition, collision_type, relation_to_road, intersect_type, tcd_type, urban_rural, location_type, sch_bus_ind, sch_zone_ind, total_units, person_count, vehicle_count, automobile_count, motorcycle_count, bus_count, small_truck_count, heavy_truck_count, suv_count, van_count, bicycle_count, fatal_count, injury_count, maj_inj_count, mod_inj_count, min_inj_count, unk_inj_deg_count, unk_inj_per_count, unbelted_occ_count, unb_death_count, unb_maj_inj_count, belted_death_count, belted_maj_inj_count, mcycle_death_count, mcycle_maj_inj_count, bicycle_death_count, bicycle_maj_inj_count, ped_count, ped_death_count, ped_maj_inj_count, comm_veh_count, max_severity_level, driver_count_16yr, driver_count_17yr, driver_count_18yr, driver_count_19yr, driver_count_20yr, driver_count_50_64yr, driver_count_65_74yr, driver_count_75plus, latitude, longitude, dec_lat, dec_long, est_hrs_closed, lane_closed, ln_close_dir, ntfy_hiwy_maint, rdwy_surf_type_cd, spec_juris_cd, tcd_func_cd, tfc_detour_ind, work_zone_ind, work_zone_type, work_zone_loc, cons_zone_spd_lim, workers_pres, wz_close_detour, wz_flagger, wz_law_offcr_ind, wz_ln_closure, wz_moving, wz_other, wz_shlder_mdn, flag_crn, interstate, state_road, local_road, local_road_only, turnpike, wet_road, snow_slush_road, icy_road, sudden_deer, shldr_related, rear_end, ho_oppdir_sdswp, hit_fixed_object, sv_run_off_rd, work_zone, property_damage_only, fatal_or_maj_inj, injury, fatal, non_intersection, intersection, signalized_int, stop_controlled_int, unsignalized_int, school_bus, school_zone, hit_deer, hit_tree_shrub, hit_embankment, hit_pole, hit_gdrail, hit_gdrail_end, hit_barrier, hit_bridge, overturned, motorcycle, bicycle, hvy_truck_related, vehicle_failure, train_trolley, phantom_vehicle, alcohol_related, drinking_driver, underage_drnk_drv, unlicensed, cell_phone, no_clearance, running_red_lt, tailgating, cross_median, curve_dvr_error, limit_65mph, speeding, speeding_related, aggressive_driving, fatigue_asleep, driver_16yr, driver_17yr, driver_65_74yr, driver_75plus, unbelted, pedestrian, distracted, curved_road, driver_18yr, driver_19yr, driver_20yr, driver_50_64yr, vehicle_towed, fire_in_vehicle, hit_parked_vehicle, mc_drinking_driver, drugged_driver, injury_or_fatal, comm_vehicle, impaired_driver, deer_related, drug_related, hazardous_truck, illegal_drug_related, illumination_dark, minor_injury, moderate_injury, major_injury, nhtsa_agg_driving, psp_reported, running_stop_sign, train, trolley, roadway_crn, rdwy_seq_num, adj_rdwy_seq, access_ctrl, roadway_county, lane_count, rdwy_orient, road_owner, route, speed_limit, segment, offset_number, street_name)
-SELECT 
-    2010, crash_crn, district, crash_county, municipality, police_agcy, crash_year, crash_month, day_of_week, time_of_day, hour_of_day, illumination, weather, road_condition, collision_type, relation_to_road, intersect_type, tcd_type, urban_rural, location_type, sch_bus_ind, sch_zone_ind, total_units, person_count, vehicle_count, automobile_count, motorcycle_count, bus_count, small_truck_count, heavy_truck_count, suv_count, van_count, bicycle_count, fatal_count, injury_count, maj_inj_count, mod_inj_count, min_inj_count, unk_inj_deg_count, unk_inj_per_count, unbelted_occ_count, unb_death_count, unb_maj_inj_count, belted_death_count, belted_maj_inj_count, mcycle_death_count, mcycle_maj_inj_count, bicycle_death_count, bicycle_maj_inj_count, ped_count, ped_death_count, ped_maj_inj_count, comm_veh_count, max_severity_level, driver_count_16yr, driver_count_17yr, driver_count_18yr, driver_count_19yr, driver_count_20yr, driver_count_50_64yr, driver_count_65_74yr, driver_count_75plus, latitude, longitude, dec_lat, dec_long, est_hrs_closed, lane_closed, ln_close_dir, ntfy_hiwy_maint, rdwy_surf_type_cd, spec_juris_cd, tcd_func_cd, tfc_detour_ind, work_zone_ind, work_zone_type, work_zone_loc, cons_zone_spd_lim, workers_pres, wz_close_detour, wz_flagger, wz_law_offcr_ind, wz_ln_closure, wz_moving, wz_other, wz_shlder_mdn, flag_crn, interstate, state_road, local_road, local_road_only, turnpike, wet_road, snow_slush_road, icy_road, sudden_deer, shldr_related, rear_end, ho_oppdir_sdswp, hit_fixed_object, sv_run_off_rd, work_zone, property_damage_only, fatal_or_maj_inj, injury, fatal, non_intersection, intersection, signalized_int, stop_controlled_int, unsignalized_int, school_bus, school_zone, hit_deer, hit_tree_shrub, hit_embankment, hit_pole, hit_gdrail, hit_gdrail_end, hit_barrier, hit_bridge, overturned, motorcycle, bicycle, hvy_truck_related, vehicle_failure, train_trolley, phantom_vehicle, alcohol_related, drinking_driver, underage_drnk_drv, unlicensed, cell_phone, no_clearance, running_red_lt, tailgating, cross_median, curve_dvr_error, limit_65mph, speeding, speeding_related, aggressive_driving, fatigue_asleep, driver_16yr, driver_17yr, driver_65_74yr, driver_75plus, unbelted, pedestrian, distracted, curved_road, driver_18yr, driver_19yr, driver_20yr, driver_50_64yr, vehicle_towed, fire_in_vehicle, hit_parked_vehicle, mc_drinking_driver, drugged_driver, injury_or_fatal, comm_vehicle, impaired_driver, deer_related, drug_related, hazardous_truck, illegal_drug_related, illumination_dark, minor_injury, moderate_injury, major_injury, nhtsa_agg_driving, psp_reported, running_stop_sign, train, trolley, roadway_crn, rdwy_seq_num, adj_rdwy_seq, access_ctrl, roadway_county, lane_count, rdwy_orient, road_owner, route, speed_limit, segment, offset_number, street_name
-FROM 
-    crashes_2010;
-
-
-INSERT INTO crashes
-    (year, crash_crn, district, crash_county, municipality, police_agcy, crash_year, crash_month, day_of_week, time_of_day, hour_of_day, illumination, weather, road_condition, collision_type, relation_to_road, intersect_type, tcd_type, urban_rural, location_type, sch_bus_ind, sch_zone_ind, total_units, person_count, vehicle_count, automobile_count, motorcycle_count, bus_count, small_truck_count, heavy_truck_count, suv_count, van_count, bicycle_count, fatal_count, injury_count, maj_inj_count, mod_inj_count, min_inj_count, unk_inj_deg_count, unk_inj_per_count, unbelted_occ_count, unb_death_count, unb_maj_inj_count, belted_death_count, belted_maj_inj_count, mcycle_death_count, mcycle_maj_inj_count, bicycle_death_count, bicycle_maj_inj_count, ped_count, ped_death_count, ped_maj_inj_count, comm_veh_count, max_severity_level, driver_count_16yr, driver_count_17yr, driver_count_18yr, driver_count_19yr, driver_count_20yr, driver_count_50_64yr, driver_count_65_74yr, driver_count_75plus, latitude, longitude, dec_lat, dec_long, est_hrs_closed, lane_closed, ln_close_dir, ntfy_hiwy_maint, rdwy_surf_type_cd, spec_juris_cd, tcd_func_cd, tfc_detour_ind, work_zone_ind, work_zone_type, work_zone_loc, cons_zone_spd_lim, workers_pres, wz_close_detour, wz_flagger, wz_law_offcr_ind, wz_ln_closure, wz_moving, wz_other, wz_shlder_mdn, flag_crn, interstate, state_road, local_road, local_road_only, turnpike, wet_road, snow_slush_road, icy_road, sudden_deer, shldr_related, rear_end, ho_oppdir_sdswp, hit_fixed_object, sv_run_off_rd, work_zone, property_damage_only, fatal_or_maj_inj, injury, fatal, non_intersection, intersection, signalized_int, stop_controlled_int, unsignalized_int, school_bus, school_zone, hit_deer, hit_tree_shrub, hit_embankment, hit_pole, hit_gdrail, hit_gdrail_end, hit_barrier, hit_bridge, overturned, motorcycle, bicycle, hvy_truck_related, vehicle_failure, train_trolley, phantom_vehicle, alcohol_related, drinking_driver, underage_drnk_drv, unlicensed, cell_phone, no_clearance, running_red_lt, tailgating, cross_median, curve_dvr_error, limit_65mph, speeding, speeding_related, aggressive_driving, fatigue_asleep, driver_16yr, driver_17yr, driver_65_74yr, driver_75plus, unbelted, pedestrian, distracted, curved_road, driver_18yr, driver_19yr, driver_20yr, driver_50_64yr, vehicle_towed, fire_in_vehicle, hit_parked_vehicle, mc_drinking_driver, drugged_driver, injury_or_fatal, comm_vehicle, impaired_driver, deer_related, drug_related, hazardous_truck, illegal_drug_related, illumination_dark, minor_injury, moderate_injury, major_injury, nhtsa_agg_driving, psp_reported, running_stop_sign, train, trolley, roadway_crn, rdwy_seq_num, adj_rdwy_seq, access_ctrl, roadway_county, lane_count, rdwy_orient, road_owner, route, speed_limit, segment, offset_number, street_name)
-SELECT 
-    2011, crash_crn, district, crash_county, municipality, police_agcy, crash_year, crash_month, day_of_week, time_of_day, hour_of_day, illumination, weather, road_condition, collision_type, relation_to_road, intersect_type, tcd_type, urban_rural, location_type, sch_bus_ind, sch_zone_ind, total_units, person_count, vehicle_count, automobile_count, motorcycle_count, bus_count, small_truck_count, heavy_truck_count, suv_count, van_count, bicycle_count, fatal_count, injury_count, maj_inj_count, mod_inj_count, min_inj_count, unk_inj_deg_count, unk_inj_per_count, unbelted_occ_count, unb_death_count, unb_maj_inj_count, belted_death_count, belted_maj_inj_count, mcycle_death_count, mcycle_maj_inj_count, bicycle_death_count, bicycle_maj_inj_count, ped_count, ped_death_count, ped_maj_inj_count, comm_veh_count, max_severity_level, driver_count_16yr, driver_count_17yr, driver_count_18yr, driver_count_19yr, driver_count_20yr, driver_count_50_64yr, driver_count_65_74yr, driver_count_75plus, latitude, longitude, dec_lat, dec_long, est_hrs_closed, lane_closed, ln_close_dir, ntfy_hiwy_maint, rdwy_surf_type_cd, spec_juris_cd, tcd_func_cd, tfc_detour_ind, work_zone_ind, work_zone_type, work_zone_loc, cons_zone_spd_lim, workers_pres, wz_close_detour, wz_flagger, wz_law_offcr_ind, wz_ln_closure, wz_moving, wz_other, wz_shlder_mdn, flag_crn, interstate, state_road, local_road, local_road_only, turnpike, wet_road, snow_slush_road, icy_road, sudden_deer, shldr_related, rear_end, ho_oppdir_sdswp, hit_fixed_object, sv_run_off_rd, work_zone, property_damage_only, fatal_or_maj_inj, injury, fatal, non_intersection, intersection, signalized_int, stop_controlled_int, unsignalized_int, school_bus, school_zone, hit_deer, hit_tree_shrub, hit_embankment, hit_pole, hit_gdrail, hit_gdrail_end, hit_barrier, hit_bridge, overturned, motorcycle, bicycle, hvy_truck_related, vehicle_failure, train_trolley, phantom_vehicle, alcohol_related, drinking_driver, underage_drnk_drv, unlicensed, cell_phone, no_clearance, running_red_lt, tailgating, cross_median, curve_dvr_error, limit_65mph, speeding, speeding_related, aggressive_driving, fatigue_asleep, driver_16yr, driver_17yr, driver_65_74yr, driver_75plus, unbelted, pedestrian, distracted, curved_road, driver_18yr, driver_19yr, driver_20yr, driver_50_64yr, vehicle_towed, fire_in_vehicle, hit_parked_vehicle, mc_drinking_driver, drugged_driver, injury_or_fatal, comm_vehicle, impaired_driver, deer_related, drug_related, hazardous_truck, illegal_drug_related, illumination_dark, minor_injury, moderate_injury, major_injury, nhtsa_agg_driving, psp_reported, running_stop_sign, train, trolley, roadway_crn, rdwy_seq_num, adj_rdwy_seq, access_ctrl, roadway_county, lane_count, rdwy_orient, road_owner, route, speed_limit, segment, offset_number, street_name
-FROM 
-    crashes_2011;
-
-INSERT INTO crashes
-    (year, crash_crn, district, crash_county, municipality, police_agcy, crash_year, crash_month, day_of_week, time_of_day, hour_of_day, illumination, weather, road_condition, collision_type, relation_to_road, intersect_type, tcd_type, urban_rural, location_type, sch_bus_ind, sch_zone_ind, total_units, person_count, vehicle_count, automobile_count, motorcycle_count, bus_count, small_truck_count, heavy_truck_count, suv_count, van_count, bicycle_count, fatal_count, injury_count, maj_inj_count, mod_inj_count, min_inj_count, unk_inj_deg_count, unk_inj_per_count, unbelted_occ_count, unb_death_count, unb_maj_inj_count, belted_death_count, belted_maj_inj_count, mcycle_death_count, mcycle_maj_inj_count, bicycle_death_count, bicycle_maj_inj_count, ped_count, ped_death_count, ped_maj_inj_count, comm_veh_count, max_severity_level, driver_count_16yr, driver_count_17yr, driver_count_18yr, driver_count_19yr, driver_count_20yr, driver_count_50_64yr, driver_count_65_74yr, driver_count_75plus, latitude, longitude, dec_lat, dec_long, est_hrs_closed, lane_closed, ln_close_dir, ntfy_hiwy_maint, rdwy_surf_type_cd, spec_juris_cd, tcd_func_cd, tfc_detour_ind, work_zone_ind, work_zone_type, work_zone_loc, cons_zone_spd_lim, workers_pres, wz_close_detour, wz_flagger, wz_law_offcr_ind, wz_ln_closure, wz_moving, wz_other, wz_shlder_mdn, flag_crn, interstate, state_road, local_road, local_road_only, turnpike, wet_road, snow_slush_road, icy_road, sudden_deer, shldr_related, rear_end, ho_oppdir_sdswp, hit_fixed_object, sv_run_off_rd, work_zone, property_damage_only, fatal_or_maj_inj, injury, fatal, non_intersection, intersection, signalized_int, stop_controlled_int, unsignalized_int, school_bus, school_zone, hit_deer, hit_tree_shrub, hit_embankment, hit_pole, hit_gdrail, hit_gdrail_end, hit_barrier, hit_bridge, overturned, motorcycle, bicycle, hvy_truck_related, vehicle_failure, train_trolley, phantom_vehicle, alcohol_related, drinking_driver, underage_drnk_drv, unlicensed, cell_phone, no_clearance, running_red_lt, tailgating, cross_median, curve_dvr_error, limit_65mph, speeding, speeding_related, aggressive_driving, fatigue_asleep, driver_16yr, driver_17yr, driver_65_74yr, driver_75plus, unbelted, pedestrian, distracted, curved_road, driver_18yr, driver_19yr, driver_20yr, driver_50_64yr, vehicle_towed, fire_in_vehicle, hit_parked_vehicle, mc_drinking_driver, drugged_driver, injury_or_fatal, comm_vehicle, impaired_driver, deer_related, drug_related, hazardous_truck, illegal_drug_related, illumination_dark, minor_injury, moderate_injury, major_injury, nhtsa_agg_driving, psp_reported, running_stop_sign, train, trolley, roadway_crn, rdwy_seq_num, adj_rdwy_seq, access_ctrl, roadway_county, lane_count, rdwy_orient, road_owner, route, speed_limit, segment, offset_number, street_name)
-SELECT 
-    2012, crash_crn, district, crash_county, municipality, police_agcy, crash_year, crash_month, day_of_week, time_of_day, hour_of_day, illumination, weather, road_condition, collision_type, relation_to_road, intersect_type, tcd_type, urban_rural, location_type, sch_bus_ind, sch_zone_ind, total_units, person_count, vehicle_count, automobile_count, motorcycle_count, bus_count, small_truck_count, heavy_truck_count, suv_count, van_count, bicycle_count, fatal_count, injury_count, maj_inj_count, mod_inj_count, min_inj_count, unk_inj_deg_count, unk_inj_per_count, unbelted_occ_count, unb_death_count, unb_maj_inj_count, belted_death_count, belted_maj_inj_count, mcycle_death_count, mcycle_maj_inj_count, bicycle_death_count, bicycle_maj_inj_count, ped_count, ped_death_count, ped_maj_inj_count, comm_veh_count, max_severity_level, driver_count_16yr, driver_count_17yr, driver_count_18yr, driver_count_19yr, driver_count_20yr, driver_count_50_64yr, driver_count_65_74yr, driver_count_75plus, latitude, longitude, dec_lat, dec_long, est_hrs_closed, lane_closed, ln_close_dir, ntfy_hiwy_maint, rdwy_surf_type_cd, spec_juris_cd, tcd_func_cd, tfc_detour_ind, work_zone_ind, work_zone_type, work_zone_loc, cons_zone_spd_lim, workers_pres, wz_close_detour, wz_flagger, wz_law_offcr_ind, wz_ln_closure, wz_moving, wz_other, wz_shlder_mdn, flag_crn, interstate, state_road, local_road, local_road_only, turnpike, wet_road, snow_slush_road, icy_road, sudden_deer, shldr_related, rear_end, ho_oppdir_sdswp, hit_fixed_object, sv_run_off_rd, work_zone, property_damage_only, fatal_or_maj_inj, injury, fatal, non_intersection, intersection, signalized_int, stop_controlled_int, unsignalized_int, school_bus, school_zone, hit_deer, hit_tree_shrub, hit_embankment, hit_pole, hit_gdrail, hit_gdrail_end, hit_barrier, hit_bridge, overturned, motorcycle, bicycle, hvy_truck_related, vehicle_failure, train_trolley, phantom_vehicle, alcohol_related, drinking_driver, underage_drnk_drv, unlicensed, cell_phone, no_clearance, running_red_lt, tailgating, cross_median, curve_dvr_error, limit_65mph, speeding, speeding_related, aggressive_driving, fatigue_asleep, driver_16yr, driver_17yr, driver_65_74yr, driver_75plus, unbelted, pedestrian, distracted, curved_road, driver_18yr, driver_19yr, driver_20yr, driver_50_64yr, vehicle_towed, fire_in_vehicle, hit_parked_vehicle, mc_drinking_driver, drugged_driver, injury_or_fatal, comm_vehicle, impaired_driver, deer_related, drug_related, hazardous_truck, illegal_drug_related, illumination_dark, minor_injury, moderate_injury, major_injury, nhtsa_agg_driving, psp_reported, running_stop_sign, train, trolley, roadway_crn, rdwy_seq_num, adj_rdwy_seq, access_ctrl, roadway_county, lane_count, rdwy_orient, road_owner, route, speed_limit, segment, offset_number, street_name
-FROM 
-    crashes_2012;
-
-INSERT INTO crashes
-    (year, crash_crn, district, crash_county, municipality, police_agcy, crash_year, crash_month, day_of_week, time_of_day, hour_of_day, illumination, weather, road_condition, collision_type, relation_to_road, intersect_type, tcd_type, urban_rural, location_type, sch_bus_ind, sch_zone_ind, total_units, person_count, vehicle_count, automobile_count, motorcycle_count, bus_count, small_truck_count, heavy_truck_count, suv_count, van_count, bicycle_count, fatal_count, injury_count, maj_inj_count, mod_inj_count, min_inj_count, unk_inj_deg_count, unk_inj_per_count, unbelted_occ_count, unb_death_count, unb_maj_inj_count, belted_death_count, belted_maj_inj_count, mcycle_death_count, mcycle_maj_inj_count, bicycle_death_count, bicycle_maj_inj_count, ped_count, ped_death_count, ped_maj_inj_count, comm_veh_count, max_severity_level, driver_count_16yr, driver_count_17yr, driver_count_18yr, driver_count_19yr, driver_count_20yr, driver_count_50_64yr, driver_count_65_74yr, driver_count_75plus, latitude, longitude, dec_lat, dec_long, est_hrs_closed, lane_closed, ln_close_dir, ntfy_hiwy_maint, rdwy_surf_type_cd, spec_juris_cd, tcd_func_cd, tfc_detour_ind, work_zone_ind, work_zone_type, work_zone_loc, cons_zone_spd_lim, workers_pres, wz_close_detour, wz_flagger, wz_law_offcr_ind, wz_ln_closure, wz_moving, wz_other, wz_shlder_mdn, flag_crn, interstate, state_road, local_road, local_road_only, turnpike, wet_road, snow_slush_road, icy_road, sudden_deer, shldr_related, rear_end, ho_oppdir_sdswp, hit_fixed_object, sv_run_off_rd, work_zone, property_damage_only, fatal_or_maj_inj, injury, fatal, non_intersection, intersection, signalized_int, stop_controlled_int, unsignalized_int, school_bus, school_zone, hit_deer, hit_tree_shrub, hit_embankment, hit_pole, hit_gdrail, hit_gdrail_end, hit_barrier, hit_bridge, overturned, motorcycle, bicycle, hvy_truck_related, vehicle_failure, train_trolley, phantom_vehicle, alcohol_related, drinking_driver, underage_drnk_drv, unlicensed, cell_phone, no_clearance, running_red_lt, tailgating, cross_median, curve_dvr_error, limit_65mph, speeding, speeding_related, aggressive_driving, fatigue_asleep, driver_16yr, driver_17yr, driver_65_74yr, driver_75plus, unbelted, pedestrian, distracted, curved_road, driver_18yr, driver_19yr, driver_20yr, driver_50_64yr, vehicle_towed, fire_in_vehicle, hit_parked_vehicle, mc_drinking_driver, drugged_driver, injury_or_fatal, comm_vehicle, impaired_driver, deer_related, drug_related, hazardous_truck, illegal_drug_related, illumination_dark, minor_injury, moderate_injury, major_injury, nhtsa_agg_driving, psp_reported, running_stop_sign, train, trolley, roadway_crn, rdwy_seq_num, adj_rdwy_seq, access_ctrl, roadway_county, lane_count, rdwy_orient, road_owner, route, speed_limit, segment, offset_number, street_name)
-SELECT 
-    2013, crash_crn, district, crash_county, municipality, police_agcy, crash_year, crash_month, day_of_week, time_of_day, hour_of_day, illumination, weather, road_condition, collision_type, relation_to_road, intersect_type, tcd_type, urban_rural, location_type, sch_bus_ind, sch_zone_ind, total_units, person_count, vehicle_count, automobile_count, motorcycle_count, bus_count, small_truck_count, heavy_truck_count, suv_count, van_count, bicycle_count, fatal_count, injury_count, maj_inj_count, mod_inj_count, min_inj_count, unk_inj_deg_count, unk_inj_per_count, unbelted_occ_count, unb_death_count, unb_maj_inj_count, belted_death_count, belted_maj_inj_count, mcycle_death_count, mcycle_maj_inj_count, bicycle_death_count, bicycle_maj_inj_count, ped_count, ped_death_count, ped_maj_inj_count, comm_veh_count, max_severity_level, driver_count_16yr, driver_count_17yr, driver_count_18yr, driver_count_19yr, driver_count_20yr, driver_count_50_64yr, driver_count_65_74yr, driver_count_75plus, latitude, longitude, dec_lat, dec_long, est_hrs_closed, lane_closed, ln_close_dir, ntfy_hiwy_maint, rdwy_surf_type_cd, spec_juris_cd, tcd_func_cd, tfc_detour_ind, work_zone_ind, work_zone_type, work_zone_loc, cons_zone_spd_lim, workers_pres, wz_close_detour, wz_flagger, wz_law_offcr_ind, wz_ln_closure, wz_moving, wz_other, wz_shlder_mdn, flag_crn, interstate, state_road, local_road, local_road_only, turnpike, wet_road, snow_slush_road, icy_road, sudden_deer, shldr_related, rear_end, ho_oppdir_sdswp, hit_fixed_object, sv_run_off_rd, work_zone, property_damage_only, fatal_or_maj_inj, injury, fatal, non_intersection, intersection, signalized_int, stop_controlled_int, unsignalized_int, school_bus, school_zone, hit_deer, hit_tree_shrub, hit_embankment, hit_pole, hit_gdrail, hit_gdrail_end, hit_barrier, hit_bridge, overturned, motorcycle, bicycle, hvy_truck_related, vehicle_failure, train_trolley, phantom_vehicle, alcohol_related, drinking_driver, underage_drnk_drv, unlicensed, cell_phone, no_clearance, running_red_lt, tailgating, cross_median, curve_dvr_error, limit_65mph, speeding, speeding_related, aggressive_driving, fatigue_asleep, driver_16yr, driver_17yr, driver_65_74yr, driver_75plus, unbelted, pedestrian, distracted, curved_road, driver_18yr, driver_19yr, driver_20yr, driver_50_64yr, vehicle_towed, fire_in_vehicle, hit_parked_vehicle, mc_drinking_driver, drugged_driver, injury_or_fatal, comm_vehicle, impaired_driver, deer_related, drug_related, hazardous_truck, illegal_drug_related, illumination_dark, minor_injury, moderate_injury, major_injury, nhtsa_agg_driving, psp_reported, running_stop_sign, train, trolley, roadway_crn, rdwy_seq_num, adj_rdwy_seq, access_ctrl, roadway_county, lane_count, rdwy_orient, road_owner, route, speed_limit, segment, offset_number, street_name
-FROM 
-    crashes_2013;
-
-INSERT INTO crashes
-    (year, crash_crn, district, crash_county, municipality, police_agcy, crash_year, crash_month, day_of_week, time_of_day, hour_of_day, illumination, weather, road_condition, collision_type, relation_to_road, intersect_type, tcd_type, urban_rural, location_type, sch_bus_ind, sch_zone_ind, total_units, person_count, vehicle_count, automobile_count, motorcycle_count, bus_count, small_truck_count, heavy_truck_count, suv_count, van_count, bicycle_count, fatal_count, injury_count, maj_inj_count, mod_inj_count, min_inj_count, unk_inj_deg_count, unk_inj_per_count, unbelted_occ_count, unb_death_count, unb_maj_inj_count, belted_death_count, belted_maj_inj_count, mcycle_death_count, mcycle_maj_inj_count, bicycle_death_count, bicycle_maj_inj_count, ped_count, ped_death_count, ped_maj_inj_count, comm_veh_count, max_severity_level, driver_count_16yr, driver_count_17yr, driver_count_18yr, driver_count_19yr, driver_count_20yr, driver_count_50_64yr, driver_count_65_74yr, driver_count_75plus, latitude, longitude, dec_lat, dec_long, est_hrs_closed, lane_closed, ln_close_dir, ntfy_hiwy_maint, rdwy_surf_type_cd, spec_juris_cd, tcd_func_cd, tfc_detour_ind, work_zone_ind, work_zone_type, work_zone_loc, cons_zone_spd_lim, workers_pres, wz_close_detour, wz_flagger, wz_law_offcr_ind, wz_ln_closure, wz_moving, wz_other, wz_shlder_mdn, flag_crn, interstate, state_road, local_road, local_road_only, turnpike, wet_road, snow_slush_road, icy_road, sudden_deer, shldr_related, rear_end, ho_oppdir_sdswp, hit_fixed_object, sv_run_off_rd, work_zone, property_damage_only, fatal_or_maj_inj, injury, fatal, non_intersection, intersection, signalized_int, stop_controlled_int, unsignalized_int, school_bus, school_zone, hit_deer, hit_tree_shrub, hit_embankment, hit_pole, hit_gdrail, hit_gdrail_end, hit_barrier, hit_bridge, overturned, motorcycle, bicycle, hvy_truck_related, vehicle_failure, train_trolley, phantom_vehicle, alcohol_related, drinking_driver, underage_drnk_drv, unlicensed, cell_phone, no_clearance, running_red_lt, tailgating, cross_median, curve_dvr_error, limit_65mph, speeding, speeding_related, aggressive_driving, fatigue_asleep, driver_16yr, driver_17yr, driver_65_74yr, driver_75plus, unbelted, pedestrian, distracted, curved_road, driver_18yr, driver_19yr, driver_20yr, driver_50_64yr, vehicle_towed, fire_in_vehicle, hit_parked_vehicle, mc_drinking_driver, drugged_driver, injury_or_fatal, comm_vehicle, impaired_driver, deer_related, drug_related, hazardous_truck, illegal_drug_related, illumination_dark, minor_injury, moderate_injury, major_injury, nhtsa_agg_driving, psp_reported, running_stop_sign, train, trolley, roadway_crn, rdwy_seq_num, adj_rdwy_seq, access_ctrl, roadway_county, lane_count, rdwy_orient, road_owner, route, speed_limit, segment, offset_number, street_name)
-SELECT 
-    2014, crash_crn, district, crash_county, municipality, police_agcy, crash_year, crash_month, day_of_week, time_of_day, hour_of_day, illumination, weather, road_condition, collision_type, relation_to_road, intersect_type, tcd_type, urban_rural, location_type, sch_bus_ind, sch_zone_ind, total_units, person_count, vehicle_count, automobile_count, motorcycle_count, bus_count, small_truck_count, heavy_truck_count, suv_count, van_count, bicycle_count, fatal_count, injury_count, maj_inj_count, mod_inj_count, min_inj_count, unk_inj_deg_count, unk_inj_per_count, unbelted_occ_count, unb_death_count, unb_maj_inj_count, belted_death_count, belted_maj_inj_count, mcycle_death_count, mcycle_maj_inj_count, bicycle_death_count, bicycle_maj_inj_count, ped_count, ped_death_count, ped_maj_inj_count, comm_veh_count, max_severity_level, driver_count_16yr, driver_count_17yr, driver_count_18yr, driver_count_19yr, driver_count_20yr, driver_count_50_64yr, driver_count_65_74yr, driver_count_75plus, latitude, longitude, dec_lat, dec_long, est_hrs_closed, lane_closed, ln_close_dir, ntfy_hiwy_maint, rdwy_surf_type_cd, spec_juris_cd, tcd_func_cd, tfc_detour_ind, work_zone_ind, work_zone_type, work_zone_loc, cons_zone_spd_lim, workers_pres, wz_close_detour, wz_flagger, wz_law_offcr_ind, wz_ln_closure, wz_moving, wz_other, wz_shlder_mdn, flag_crn, interstate, state_road, local_road, local_road_only, turnpike, wet_road, snow_slush_road, icy_road, sudden_deer, shldr_related, rear_end, ho_oppdir_sdswp, hit_fixed_object, sv_run_off_rd, work_zone, property_damage_only, fatal_or_maj_inj, injury, fatal, non_intersection, intersection, signalized_int, stop_controlled_int, unsignalized_int, school_bus, school_zone, hit_deer, hit_tree_shrub, hit_embankment, hit_pole, hit_gdrail, hit_gdrail_end, hit_barrier, hit_bridge, overturned, motorcycle, bicycle, hvy_truck_related, vehicle_failure, train_trolley, phantom_vehicle, alcohol_related, drinking_driver, underage_drnk_drv, unlicensed, cell_phone, no_clearance, running_red_lt, tailgating, cross_median, curve_dvr_error, limit_65mph, speeding, speeding_related, aggressive_driving, fatigue_asleep, driver_16yr, driver_17yr, driver_65_74yr, driver_75plus, unbelted, pedestrian, distracted, curved_road, driver_18yr, driver_19yr, driver_20yr, driver_50_64yr, vehicle_towed, fire_in_vehicle, hit_parked_vehicle, mc_drinking_driver, drugged_driver, injury_or_fatal, comm_vehicle, impaired_driver, deer_related, drug_related, hazardous_truck, illegal_drug_related, illumination_dark, minor_injury, moderate_injury, major_injury, nhtsa_agg_driving, psp_reported, running_stop_sign, train, trolley, roadway_crn, rdwy_seq_num, adj_rdwy_seq, access_ctrl, roadway_county, lane_count, rdwy_orient, road_owner, route, speed_limit, segment, offset_number, street_name
-FROM 
-    crashes_2014;
+INSERT INTO crashes select * from crashes_2014; 
+INSERT INTO crashes select * from crashes_2013; 
+INSERT INTO crashes select * from crashes_2012; 
+INSERT INTO crashes select * from crashes_2011; 
+INSERT INTO crashes select * from crashes_2010; 
 ```
 
 Let's add crash point geometry to the database.
@@ -377,75 +414,111 @@ CREATE INDEX crashes_geom_feet_idx
   (geom_feet);
 ```
 
-
-
-Next, we want to update every crash with the gid of the closest road segment for the given year. We don't want to compute the distances from each of the 12,000 crash points to each of the 2700 road segments. So first, we find all roads within 50 feet of the crash, compute the distances, and take the minimum.
+Next, we want to update every crash with the id of the closest road_stats segment for the given year. We don't want to compute the distances from each of the 12,000 crash points to each of the 2700 road segments. So first, we find all roads within 50 feet of the crash, compute the distances, and take the minimum.
 
 SQL
 ```sql
-ALTER TABLE crashes ADD COLUMN roads_gid integer ;
-ALTER TABLE crashes ADD COLUMN roads_gid_distance numeric;
+ALTER TABLE crashes ADD COLUMN road_stats_id integer ;
+ALTER TABLE crashes ADD COLUMN road_stats_id_distance numeric;
 UPDATE crashes 
-    SET roads_gid = d.gid, roads_gid_distance = d.distance 
+    SET road_stats_id = d.id, road_stats_id_distance = d.distance 
     FROM (
        SELECT DISTINCT ON (crash_crn)
             crash_crn,
-            gid,
-            MIN(ST_Distance(crash_geom, roads_geom)) as distance
+            id,
+            MIN(ST_Distance(crashes_geom, road_stats_geom)) as distance
         FROM
         (
             SELECT 
-                gid,
-                crash_crn,
-                c.geom_feet as crash_geom,
-                t.geom_feet as roads_geom
+                t.id,
+                c.crash_crn,
+                c.geom_feet as crashes_geom,
+                t.geom_feet as road_stats_geom
             FROM 
-                roads t, 
+                road_stats t, 
                 crashes c 
             WHERE
-                 ST_DWithin(t.geom_feet, c.geom_feet, 50) AND
-                t.year = c.year
+                 ST_DWithin(t.geom_feet, c.geom_feet, 50)
         ) as n
         GROUP BY 
-            crash_crn, gid
+            crash_crn, id
         ORDER BY crash_crn, distance
     ) as d 
 WHERE crashes.crash_crn = d.crash_crn;
 ```
 
 
+Export the crashes above to a csv, now that they're associated with a segment.
+
+```sql
+COPY (
+    SELECT 
+        road_stats_id,
+        road_stats_id_distance,
+        year,
+        dec_lat, 
+        dec_long,
+        fatal_count,
+        maj_inj_count,
+        bicycle_death_count,
+        bicycle_maj_inj_count,
+        ped_death_count,
+        ped_maj_inj_count,
+        time_of_day,
+        weather,
+        relation_to_road,
+        alcohol_related,
+        speeding,
+        speeding_related,
+        aggressive_driving
+
+    FROM crashes 
+    WHERE 
+        road_crash_stats_id IS NOT NULL AND
+        fatal_count > 0 OR
+        maj_inj_count > 0 OR
+        bicycle_death_count > 0 OR
+        bicycle_maj_inj_count > 0 OR
+        ped_death_count > 0 OR
+        ped_maj_inj_count > 0
+) TO '/Users/Shared/crashes.csv'  DELIMITER ',' CSV HEADER;
+```
+
+
+Now, let's aggregate data of interest and append it to the road_stats table.
+
 SQL
 ```sql
 -- These are indicator variables.
-ALTER TABLE roads ADD COLUMN aggressive_driving numeric;
-ALTER TABLE roads ADD COLUMN alcohol_related numeric;
-ALTER TABLE roads ADD COLUMN automobile_count numeric;
-ALTER TABLE roads ADD COLUMN bicycle numeric;
-ALTER TABLE roads ADD COLUMN deer_related numeric;
-ALTER TABLE roads ADD COLUMN injury numeric;
-ALTER TABLE roads ADD COLUMN fatal numeric;
-ALTER TABLE roads ADD COLUMN minor_injury numeric;
-ALTER TABLE roads ADD COLUMN moderate_injury numeric;
-ALTER TABLE roads ADD COLUMN major_injury numeric;
-ALTER TABLE roads ADD COLUMN speeding numeric;
-ALTER TABLE roads ADD COLUMN pedestrian numeric;
-ALTER TABLE roads ADD COLUMN speeding_related numeric;
+ALTER TABLE road_stats ADD COLUMN aggressive_driving numeric;
+ALTER TABLE road_stats ADD COLUMN alcohol_related numeric;
+ALTER TABLE road_stats ADD COLUMN automobile_count numeric;
+ALTER TABLE road_stats ADD COLUMN bicycle numeric;
+ALTER TABLE road_stats ADD COLUMN deer_related numeric;
+ALTER TABLE road_stats ADD COLUMN injury numeric;
+ALTER TABLE road_stats ADD COLUMN fatal numeric;
+ALTER TABLE road_stats ADD COLUMN minor_injury numeric;
+ALTER TABLE road_stats ADD COLUMN moderate_injury numeric;
+ALTER TABLE road_stats ADD COLUMN major_injury numeric;
+ALTER TABLE road_stats ADD COLUMN speeding numeric;
+ALTER TABLE road_stats ADD COLUMN pedestrian numeric;
+ALTER TABLE road_stats ADD COLUMN speeding_related numeric;
 -- These are count variables.
-ALTER TABLE roads ADD COLUMN fatal_count numeric;
-ALTER TABLE roads ADD COLUMN injury_count numeric;
-ALTER TABLE roads ADD COLUMN maj_inj_count numeric;
-ALTER TABLE roads ADD COLUMN mod_inj_count numeric;
-ALTER TABLE roads ADD COLUMN min_inj_count numeric;
-ALTER TABLE roads ADD COLUMN bicycle_count numeric;
-ALTER TABLE roads ADD COLUMN bicycle_death_count numeric;
-ALTER TABLE roads ADD COLUMN bicycle_maj_inj_count numeric;
-ALTER TABLE roads ADD COLUMN ped_count numeric;
-ALTER TABLE roads ADD COLUMN ped_death_count numeric;
-ALTER TABLE roads ADD COLUMN ped_maj_inj_count numeric;
-ALTER TABLE roads ADD COLUMN person_count numeric;
-ALTER TABLE roads ADD COLUMN vehicle_count numeric;
+ALTER TABLE road_stats ADD COLUMN fatal_count numeric;
+ALTER TABLE road_stats ADD COLUMN injury_count numeric;
+ALTER TABLE road_stats ADD COLUMN maj_inj_count numeric;
+ALTER TABLE road_stats ADD COLUMN mod_inj_count numeric;
+ALTER TABLE road_stats ADD COLUMN min_inj_count numeric;
+ALTER TABLE road_stats ADD COLUMN bicycle_count numeric;
+ALTER TABLE road_stats ADD COLUMN bicycle_death_count numeric;
+ALTER TABLE road_stats ADD COLUMN bicycle_maj_inj_count numeric;
+ALTER TABLE road_stats ADD COLUMN ped_count numeric;
+ALTER TABLE road_stats ADD COLUMN ped_death_count numeric;
+ALTER TABLE road_stats ADD COLUMN ped_maj_inj_count numeric;
+ALTER TABLE road_stats ADD COLUMN person_count numeric;
+ALTER TABLE road_stats ADD COLUMN vehicle_count numeric;
 
-UPDATE roads 
+UPDATE road_stats 
     SET 
         aggressive_driving = 0,
         alcohol_related = 0,
@@ -476,7 +549,7 @@ UPDATE roads
         vehicle_count = 0
 ;
 
-UPDATE roads 
+UPDATE road_stats 
     SET 
         aggressive_driving = s.aggressive_driving,
         alcohol_related = s.alcohol_related,
@@ -507,8 +580,7 @@ UPDATE roads
         vehicle_count = s.vehicle_count
     FROM (
         SELECT 
-            roads_gid,
-            year,
+            road_stats_id,
             SUM(aggressive_driving) as aggressive_driving,
             SUM(alcohol_related) as alcohol_related,
             SUM(automobile_count) as automobile_count,
@@ -539,30 +611,35 @@ UPDATE roads
         FROM 
             crashes c 
         GROUP BY 
-            roads_gid,
-            year
+            road_stats_id
     ) as s
 WHERE
-    roads.gid = s.roads_gid AND
-    roads.year = s.year;
+    road_stats.id = s.road_stats_id;
 
-ALTER TABLE roads ADD COLUMN dly_vmt numeric;
-UPDATE roads SET dly_vmt = (seg_lngth_ / 5280) * cur_aadt;
+ALTER TABLE road_stats ADD COLUMN dly_vmt_avg numeric;
+UPDATE road_stats SET dly_vmt_avg = (seg_lngth_ / 5280) * cur_aadt_avg;
 ```
 
-Lets start with major injuries and fatalities for everyone, bicycles, and pederstrians per 100 M vmt. 
+
+```bash
+ogr2ogr -f GeoJSON road_stats.json "PG:host=localhost dbname=crashes user=crashes password=crashes" -sql 'SELECT id, st_rt_no, seg_no, cur_aadt_avg, street_nam, lane_cnt, seg_lngth_, geom, dly_vmt_avg, fatal_count, maj_inj_count, bicycle_death_count, bicycle_maj_inj_count, ped_death_count, ped_maj_inj_count FROM road_stats;'
+```
+
+
+
+Refactoring the junk below...
+
+
+
+
+
 
 ```sql
-CREATE TABLE road_crash_stats 
-AS (SELECT
-        st_rt_no, 
-        seg_no,
-        side_ind,
-
-        AVG( (fatal_count * 1000000000) / (dly_vmt  * 365 ) ) as fatal_count_vmt_avg,
-        AVG( (maj_inj_count * 1000000000) / (dly_vmt  * 365 ) ) as maj_inj_count_vmt_avg,
+ALTER TABLE road_stats
+    AVG( (fatal_count * 100 000 000) / (dly_vmt  * 365 ) ) as fatal_count_vmt_avg,
+        AVG( (maj_inj_count * 1000000000) / (dly_vmt  * 365 ) ) as maj_inj_count_vmt_rate,
     
-        AVG( (bicycle_death_count * 1000000000) / (dly_vmt  * 365 ) ) as bicycle_death_count_vmt_avg,
+        AVG( (bicycle_death_count * 1000000000) / (dly_vmt  * 365 ) ) as bicycle_death_count_vmt_rate,
         AVG( (bicycle_maj_inj_count * 1000000000) / (dly_vmt  * 365 ) ) bicycle_maj_inj_count_vmt_avg,
 
         AVG( (ped_death_count * 1000000000) / (dly_vmt  * 365 ) ) as ped_death_count_vmt_avg,
@@ -577,54 +654,9 @@ AS (SELECT
         SUM(ped_death_count ) as ped_death_count_sum,
         SUM(ped_maj_inj_count ) as ped_maj_inj_count_sum
 
-FROM
-        roads
-WHERE 
-        dly_vmt > 0
-GROUP BY
-        st_rt_no, 
-        seg_no,
-        side_ind
-);
 ```
 
-```sql
-ALTER TABLE road_crash_stats ADD COLUMN geom geometry(MULTILINESTRING, 4269);
 
-UPDATE road_crash_stats s
-    SET
-        gid = u.gid
-        geom = u.geom
-FROM
-(
-    SELECT
-        r.geom, r.gid, r.st_rt_no, r.seg_no, r.side_ind
-    FROM 
-    (
-        SELECT
-            MAX(year) as year,
-            st_rt_no, 
-            seg_no,
-            side_ind
-        FROM
-            roads
-        GROUP BY
-            st_rt_no, 
-            seg_no,
-            side_ind
-    ) as m,
-     roads r
-     WHERE 
-        m.year = r.year AND
-        m.st_rt_no = r.st_rt_no AND
-        m.seg_no = r.seg_no AND
-        m.side_ind = r.side_ind
-) as u
-WHERE
-    s.st_rt_no = u.st_rt_no AND 
-    s.seg_no = u.seg_no AND
-    s.side_ind = u.side_ind;
-```
 
 Export the data to json to view with Leaflet.
 
@@ -669,29 +701,4 @@ UPDATE crashes
 WHERE crashes.crash_crn = d.crash_crn;
 ```
 
-
-```sql
-COPY (
-    SELECT 
-        road_crash_stats_id,
-        year,
-        dec_lat, 
-        dec_long
-        fatal_count,
-        maj_inj_count,
-        bicycle_death_count,
-        bicycle_maj_inj_count,
-        ped_death_count,
-        ped_maj_inj_count
-    FROM crashes 
-    WHERE 
-        road_crash_stats_id IS NOT NULL AND
-        fatal_count > 0 OR
-        maj_inj_count > 0 OR
-        bicycle_death_count > 0 OR
-        bicycle_maj_inj_count > 0 OR
-        ped_death_count > 0 OR
-        ped_maj_inj_count > 0
-) TO '/Users/Shared/crashes.csv'  DELIMITER ',' CSV HEADER;
-```
 

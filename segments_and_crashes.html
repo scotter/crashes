@@ -70,7 +70,7 @@
 
 
     queue()
-      .defer(d3.json, './data/road_crash_stats.json')
+      .defer(d3.json, './data/road_stats.json')
       .defer(d3.csv, './data/crashes.csv')
       .await(function(error, roads, crashes) { 
         if (error) throw error;
@@ -80,20 +80,29 @@
         var colors = ['#fee0d2','#fcbba1','#fc9272','#fb6a4a','#ef3b2c','#cb181d','#a50f15','#67000d'];
 
         roads.features.forEach(function(d){
-          d.properties.value = Math.log(+d.properties.fatal_count_vmt_avg + +d.properties.maj_inj_count_vmt_avg);
+          var value = (+d.properties.fatal_count + +d.properties.maj_inj_count) / ( 100000000 * +d.properties.dly_vmt_avg);
+          d.properties.value = value == 0 ? 0 : Math.log(value);
         });
 
 
-        var max_value = d3.max(roads.features.map(function(d){
-            return d.properties.value;
-          }));
+        roads.features = roads.features.sort(function(a,b){
+          return d3.descending(a.properties.value, b.properties.value);
+        });
+
+        window.has_crashes = roads.features.filter(function(d){
+          return d.properties.value != 0;
+        })
+
+        var extent = d3.extent(has_crashes.map(function(d){
+          return d.properties.value;
+        }));
 
         var quantize = d3.scale.quantize()
-          .domain([0, max_value])
+          .domain(extent)
           .range(d3.range(8).map(function(i) { return colors[i] }));
 
         var width_scale = d3.scale.linear()
-          .domain([0, max_value])
+          .domain(extent)
           .range([0.5, 5]);
 
 
@@ -113,7 +122,7 @@
 
           circles.enter().append('circle')
             .attr('class', function(d){
-              return 'crash c-' + d.road_crash_stats_id
+              return 'crash c-' + d.road_stats_id
             })
             .attr('r', function(d){
               return +d.fatal_count + 5;
@@ -143,6 +152,9 @@
 
             road_paths.enter().append('path')
               .attr('class', 'road')
+              .attr('id', function(d){
+                return 'road-' + d.properties.id;
+              })
               .attr('d', d3.geo.path()
                   .projection(function(l){
                     var p = projection.latLngToLayerPoint({ lon: l[0], lat:  l[1] });
@@ -150,10 +162,10 @@
                   })
                 )
               .attr('stroke', function(d){
-                return quantize( +d.properties.value );
+                return d.properties.value !== 0 ? quantize( d.properties.value ) : '#efefef';
               })
               .attr('stroke-width', function(d){
-                return width_scale( +d.properties.value );
+                return d.properties.value !== 0 ? width_scale( +d.properties.value ) : 0.5;
               })
               .on('mouseenter', function(d){
                 var self = this,
@@ -177,6 +189,10 @@
         });
 
         svg.addTo(map);
+        /* 
+          var bounds = d3.geo.bounds(has_crashes[10].geometry)
+          map.fitBounds( [ [bounds[0][1], bounds[0][0]], [bounds[1][1], bounds[1][0]] ], { animate: true, duration: 10, maxZoom: 15 })
+        */
  
       });
 
