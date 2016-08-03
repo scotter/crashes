@@ -476,7 +476,7 @@ COPY (
     WHERE 
         road_crash_stats_id IS NOT NULL AND
         fatal_count > 0 OR
-        maj_inj_count > 0 OR
+        injury_count > 0 OR
         bicycle_death_count > 0 OR
         bicycle_maj_inj_count > 0 OR
         ped_death_count > 0 OR
