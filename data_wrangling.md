@@ -622,7 +622,7 @@ UPDATE road_stats SET dly_vmt_avg = (seg_lngth_ / 5280) * cur_aadt_avg;
 
 
 ```bash
-ogr2ogr -f GeoJSON road_stats.json "PG:host=localhost dbname=crashes user=crashes password=crashes" -sql 'SELECT id, st_rt_no, seg_no, cur_aadt_avg, street_nam, lane_cnt, seg_lngth_, geom, dly_vmt_avg, fatal_count, maj_inj_count, bicycle_death_count, bicycle_maj_inj_count, ped_death_count, ped_maj_inj_count FROM road_stats;'
+ogr2ogr -f GeoJSON road_stats.json "PG:host=localhost dbname=crashes user=crashes password=crashes" -sql 'SELECT id, st_rt_no, seg_no, cur_aadt_avg, street_nam, lane_cnt, seg_lngth_, geom, dly_vmt_avg, fatal_count, injury_count, maj_inj_count, mod_inj_count, min_inj_count, bicycle_death_count, bicycle_maj_inj_count, ped_death_count, ped_maj_inj_count FROM road_stats;'
 ```
 
 

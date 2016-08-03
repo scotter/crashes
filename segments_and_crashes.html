@@ -25,16 +25,23 @@
     width: 100%;
   }
 
+  h1 {
+    font-size: 18px;
+    font-weight: normal;
+  }
+
   #blurb {
     position: absolute;
-    width: 100%;
+    width: 300px;
+    height: 100%;
     bottom: 0px;
-    left: 0px;
+    right: 0px;
     font-size: 16px;
     background-color: white;
-    padding: 8px;
-    opacity: 0.9;
+    padding: 10px 15px 15px 15px;
+    opacity: 0.8;
   }
+
 
   .road {
     fill: none;
@@ -49,7 +56,10 @@
   <div id="map"></div>
 
   <div id="blurb">
+    <h1>Road Segments and Crashes</h1>
     Road segments colored by their Fatal and Major Injury <a href="http://safety.fhwa.dot.gov/local_rural/training/fhwasa1109/app_c.cfm" target="_blank">rate per Vehicle Miles Traveled</a>. Hovering on segment shows the associated crashes in from 2010 - 2014. This is very much a work in progress.
+    <ol id="dangerous-segments"></ol>
+    <div id="detail"></div>
   </div>
 
 
@@ -74,14 +84,13 @@
       .defer(d3.csv, './data/crashes.csv')
       .await(function(error, roads, crashes) { 
         if (error) throw error;
-        console.log(roads);
-        console.log(crashes);
 
         var colors = ['#fee0d2','#fcbba1','#fc9272','#fb6a4a','#ef3b2c','#cb181d','#a50f15','#67000d'];
 
         roads.features.forEach(function(d){
-          var value = (+d.properties.fatal_count + +d.properties.maj_inj_count) / ( 100000000 * +d.properties.dly_vmt_avg);
-          d.properties.value = value == 0 ? 0 : Math.log(value);
+          var value = (+d.properties.fatal_count + +d.properties.injury_count) / ( 100000000 * +d.properties.dly_vmt_avg);
+          d.properties.value = value;
+          d.properties.log_value = value == 0 ? 0 : Math.log(value);
         });
 
 
@@ -89,12 +98,14 @@
           return d3.descending(a.properties.value, b.properties.value);
         });
 
+        console.log('roads.features',roads.features);
+
         window.has_crashes = roads.features.filter(function(d){
-          return d.properties.value != 0;
+          return d.properties.log_value != 0;
         })
 
         var extent = d3.extent(has_crashes.map(function(d){
-          return d.properties.value;
+          return d.properties.log_value;
         }));
 
         var quantize = d3.scale.quantize()
@@ -113,32 +124,50 @@
             crashes_g = selection.append('g')
               .attr('class','crashes')
 
-          crashes = crashes.filter(function(d){
-            return (+d.fatal_count + +d.maj_inj_count) > 0;
+          // crashes = crashes.filter(function(d){
+          //   return (+d.fatal_count + +d.injury_count) > 0;
+          // });
+
+          var crashes_hash = {};
+          crashes.forEach(function(d){
+            if( +d.fatal_count + +d.injury_count == 0 ) { return; }
+
+            var c = crashes_hash[d.road_stats_id];
+            if(!c){
+              crashes_hash[d.road_stats_id] = [];
+              c = crashes_hash[d.road_stats_id];
+            }
+
+            c.push(d);
           });
 
-          var circles = crashes_g.selectAll('circle')
-              .data(crashes);
 
-          circles.enter().append('circle')
-            .attr('class', function(d){
-              return 'crash c-' + d.road_stats_id
-            })
-            .attr('r', function(d){
-              return +d.fatal_count + 5;
-            })
-            .attr('cx', function(d){
-              var p = projection.latLngToLayerPoint({ lon: +d.dec_long, lat: +d.dec_lat });
-              return p.x;
-            })
-            .attr('cy', function(d){
-              var p = projection.latLngToLayerPoint({ lon: +d.dec_long, lat: +d.dec_lat });
-              return p.y;
-            })         
-            .style('fill', function(){
-              return 'red';
-            })
-            .style('opacity', 0);
+          window.crashes_hash = crashes_hash;
+
+          // var circles = crashes_g.selectAll('circle')
+          //     .data(crashes);
+
+          // circles.enter().append('circle')
+          //   .attr('class', function(d){
+          //     return 'crash c-' + d.road_stats_id
+          //   })
+          //   .attr('r', function(d){
+          //     return +d.fatal_count + 5;
+          //   })
+          //   .attr('cx', function(d){
+          //     var p = projection.latLngToLayerPoint({ lon: +d.dec_long, lat: +d.dec_lat });
+          //     return p.x;
+          //   })
+          //   .attr('cy', function(d){
+          //     var p = projection.latLngToLayerPoint({ lon: +d.dec_long, lat: +d.dec_lat });
+          //     return p.y;
+          //   })         
+          //   .style('fill', function(){
+          //     return 'red';
+          //   })
+          //   .style('opacity', 0);
+          
+
           }
 
 
@@ -162,29 +191,78 @@
                   })
                 )
               .attr('stroke', function(d){
-                return d.properties.value !== 0 ? quantize( d.properties.value ) : '#efefef';
+                return d.properties.log_value !== 0 ? quantize( d.properties.log_value ) : '#efefef';
               })
               .attr('stroke-width', function(d){
-                return d.properties.value !== 0 ? width_scale( +d.properties.value ) : 0.5;
+                return d.properties.log_value !== 0 ? width_scale( +d.properties.log_value ) : 0.5;
               })
-              .on('mouseenter', function(d){
-                var self = this,
-                    other_roads = d3.selectAll('path.road').filter(function(d,i) {
-                      return (this !== self);
-                    });
-                d3.select(this).attr('opacity', 0.5);
-                other_roads.attr('opacity', 0.1);
+              // .on('mouseenter', function(d){
+              //   var self = this,
+              //       other_roads = d3.selectAll('path.road').filter(function(d,i) {
+              //         return (this !== self);
+              //       });
+              //   d3.select(this).attr('opacity', 0.5);
+              //   other_roads.attr('opacity', 0.1);
 
-                crashes_g.selectAll('circle.c-' + d.properties.id)
-                  .style('opacity', 1)
+              //   // crashes_g.selectAll('circle.c-' + d.properties.id)
+              //   //   .style('opacity', 1)
 
-              })
-              .on('mouseleave', function(){
-                d3.selectAll('path.road').attr('opacity', 1);
-                crashes_g.selectAll('circle')
-                  .style('opacity', 0)
-              });
+              // })
+              // .on('mouseleave', function(){
+              //   d3.selectAll('path.road').attr('opacity', 1);
+              //   // crashes_g.selectAll('circle')
+              //   //   .style('opacity', 0)
+              // });
           }
+        
+
+        });
+
+
+        var top_crashes = roads.features.slice(0,20);
+
+
+        var reverse_coordinates = function(array){
+          var new_array = []
+          array.forEach(function(a){
+            new_array.push([a[1],a[0]]);
+          });
+          return new_array;
+        }
+
+        d3.select('#dangerous-segments').selectAll('li')
+          .data(top_crashes)
+        .enter().append('li')
+        .each(function(d){
+          var li = d3.select(this),
+              a = li.append('a');
+
+          a.text(d.properties.street_nam)
+            .attr('href', '#' + d.properties.street_nam)
+            .on('click', function(){
+              d3.event.preventDefault();
+
+              var bounds = L.latLngBounds(
+                reverse_coordinates( d.geometry.coordinates[0]) );
+
+              map.fitBounds(bounds, { maxZoom: 13, animate: true, duration: 1 })
+
+              d3.selectAll('.road')
+                .style('opacity', 0.05);
+
+              d3.selectAll('#road-' + d.properties.id)
+                .style('opacity', 0.9);
+
+
+              d3.select('#detail')
+                .html(
+                  d.properties.fatal_count + ' fatalities  and ' + d.properties.injury_count + ' injuries <br>' + 
+                  d3.format('.2s')(d.properties.value) + ' per 100M vmt <br>' +
+                  d3.format('.2f')(d.properties.seg_lngth_ / 5280) + ' miles <br>' +
+                  d3.format(',')(d.properties.cur_aadt_avg) + ' daily vehicles <br>' +
+                  d3.format(',.2f')(d.properties.dly_vmt_avg) + '  vehicle miles traveled'
+                )
+            });
 
         });
 
