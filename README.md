@@ -1,4 +1,4 @@
-#Allengheny County Crashes
+#Allegheny County Crashes
 
 This project attempts to visualize and analyze Allegheny County crashes from 2010 - 2014. The crash data provided by the county includes crash points. But if we want to know about how "dangerous" a road is, we also need to know the level of usage of the roads on which crashes occur. Roads with higher levels of usage are more likely to have crashes simply because there is more traffic and more opportunity for a crash.
 
